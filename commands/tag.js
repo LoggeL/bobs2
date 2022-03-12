@@ -4,6 +4,26 @@ const subreddits = require('../content/data.json')
 const OGParser = require('ogparser')
 const fetch = require('node-fetch')
 
+function shuffle(array) {
+  let currentIndex = array.length,
+    randomIndex
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex)
+    currentIndex--
+
+    // And swap it with the current element.
+    ;[array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ]
+  }
+
+  return array
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('tag')
@@ -16,41 +36,41 @@ module.exports = {
         .setAutocomplete(true)
     ),
   execute: async (interaction) => {
-    await interaction.deferReply({ ephermal: true })
-
     const subreddit = interaction.options.getString('tag')
 
     console.log(subreddit)
+    await interaction.deferReply({ ephermal: true })
 
-    const response = await fetch(
-      `https://www.reddit.com/r/${subreddit}.json?sort=random`
-    )
-    const data = await response.json()
-    const children = data.data.children
-    const url = children[children.length - 1].data.url
+    let url, title
+    try {
+      const response = await fetch(
+        `https://www.reddit.com/r/${subreddit}/random.json`
+      )
+      const data = await response.json()
+      let children = data[0].data.children
+      for (let i = 0; i < 5; i++) {
+        ;({ url, title } = children[0]?.data)
+        if (url) break
+      }
+    } catch (e) {
+      console.error(e)
+      return interaction.editReply({
+        content: 'Error fetching tag',
+      })
+    }
 
     // ToDo Error handling
 
     const og = await OGParser.parse(url)
+    let file
 
-    if (typeof og.video == 'string')
-      return interaction.editReply({
-        files: [og.video],
-      })
-    if (og.video && typeof og.video.video == 'string')
-      return interaction.editReply({
-        files: [og.video.video],
-      })
-    if (typeof og.image == 'string')
-      return interaction.editReply({
-        files: [og.image],
-      })
-    if (og.image && typeof og.image.image == 'string')
-      return interaction.editReply({
-        files: [og.image.image],
-      })
+    if (typeof og.video == 'string') file = og.video
+    if (og.video && typeof og.video.video == 'string') file = og.video.video
+    if (typeof og.image == 'string') file = og.image
+    if (og.image && typeof og.image.image == 'string') file = og.image.image
 
-    return interaction.editReply(url)
+    if (file) return interaction.editReply({ file, content: title })
+    else return interaction.editReply(title + '\n' + url)
   },
   autocomplete: async (interaction) => {
     const currentValue = interaction.options.getFocused()

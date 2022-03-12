@@ -30,10 +30,11 @@ client.on('interactionCreate', async (interaction) => {
       await command.autocomplete(interaction)
   } catch (error) {
     console.error(error)
-    await interaction.reply({
-      content: 'There was an error while executing this command!',
-      ephemeral: true,
-    })
+    if (interaction.isCommand())
+      await interaction.reply({
+        content: 'There was an error while executing this command!',
+        ephemeral: true,
+      })
   }
 })
 
