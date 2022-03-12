@@ -47,7 +47,8 @@ module.exports = {
         `https://www.reddit.com/r/${subreddit}/random.json`
       )
       const data = await response.json()
-      let children = data[0].data.children
+      let children = data[0] ? data[0].data.children : data.data.children
+      children = children.filter((e) => !e.data.selftext)
       for (let i = 0; i < 5; i++) {
         ;({ url, title } = children[0]?.data)
         if (url) break
