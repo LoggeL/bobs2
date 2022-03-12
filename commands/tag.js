@@ -69,7 +69,7 @@ module.exports = {
     if (typeof og.image == 'string') file = og.image
     if (og.image && typeof og.image.image == 'string') file = og.image.image
 
-    if (file) return interaction.editReply({ file, content: title })
+    if (file) return interaction.editReply({ files: [file], content: title })
     else return interaction.editReply(title + '\n' + url)
   },
   autocomplete: async (interaction) => {
